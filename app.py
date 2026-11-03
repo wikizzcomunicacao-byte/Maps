@@ -1,51 +1,33 @@
 import streamlit as st
-import pandas as pd
-import os
 import subprocess
+import os
 
-st.set_page_config(page_title="Kit de Extração Google Maps", layout="centered")
+st.title("Painel de Extração - Google Maps")
 
-st.title("Kit de Extração de Dados do Google Maps")
-st.write("Insira o termo de busca desejado para realizar a extração em tempo real.")
+st.markdown("Insira os parâmetros abaixo para iniciar a busca e extração de leads.")
 
-# Campo para o utilizador digitar a busca
-termo = st.text_input("O que deseja procurar? (ex: contabilidade em sao jose do rio preto)", "contabilidade em sao jose do rio preto")
+# Campos de entrada na interface do Streamlit
+termo_busca = st.text_input("Termo de Pesquisa (ex: Dentistas, Restaurantes)", "Dentistas em Potirendaba")
+localidade = st.text_input("Localização", "São José do Rio Preto, SP")
+limite_resultados = st.slider("Número máximo de resultados", 10, 100, 20)
 
 if st.button("Iniciar Extração"):
-    with st.spinner("A executar a extração no Google Maps... Por favor, aguarde."):
+    with st.spinner("A executar o scraper... Por favor, aguarde."):
         try:
-            # Opção A: Se o repositório tiver um script python executável direto (ex: main.py ou scraper.py)
-            # Pode disparar o comando via subprocess passando o termo:
-            # subprocess.run(["python", "main.py", "--query", termo], check=True)
+            # Exemplo de chamada ao script em Python do seu motor de scraping
+            # Ajuste o comando conforme o script principal do seu repositório (ex: engine/maps.py)
+            comando = ["python", "engine/maps.py", "--query", termo_busca, "--location", localidade, "--limit", str(limite_resultados)]
             
-            # (Simulação da leitura do ficheiro de saída gerado pelo scraper real)
-            # Substitua 'resultado.csv' pelo caminho real onde o seu script guarda o ficheiro gerado
-            caminho_csv = "resultado.csv" 
+            resultado = subprocess.run(comando, capture_output=True, text=True, check=True)
             
-            # Verificação se o ficheiro foi gerado pelo script
-            if os.path.exists(caminho_csv):
-                df = pd.read_csv(caminho_csv)
-            else:
-                # Dados de exemplo caso o script ainda esteja a gerar o ficheiro real na sua pasta
-                dados_exemplo = {
-                    "Nome": ["Escritório Exemplo 1", "Consultoria Exemplo 2"],
-                    "Morada": ["Rua Josefino Chaves, Potirendaba", "Av. Central, São José do Rio Preto"],
-                    "Telefone": ["(17) 99141-7365", "(17) 99792-5230"]
-                }
-                df = pd.DataFrame(dados_exemplo)
-
-            # Converter para CSV usando ponto e vírgula (;) e codificação compatível com Excel (utf-8-sig)
-            csv_data = df.to_csv(index=False, sep=';').encode('utf-8-sig')
+            st.success("Extração concluída com sucesso!")
+            st.text_area("Log de Execução", resultado.stdout, height=200)
             
-            st.success("Processo concluído com sucesso!")
-            
-            # Botão de download direto na interface
-            st.download_button(
-                label="Descarregar Dados Extraídos (CSV para Excel)",
-                data=csv_data,
-                file_name="resultados_google_maps.csv",
-                mime="text/csv"
-            )
-            
-        except Exception as e:
-            st.error(f"Ocorreu um erro durante a execução: {e}")
+            # Se o scraper gerar um ficheiro CSV/Excel, disponibilize-o para download
+            # if os.path.exists("output.csv"):
+            #     with open("output.csv", "rb") as f:
+            #         st.download_button("Descarregar Resultados (CSV)", f, file_name="leads.csv", mime="text/csv")
+                    
+        except subprocess.CalledProcessError as e:
+            st.error(f"Ocorreu um erro durante a execução do scraper:")
+            st.text_area("Erro", e.stderr, height=150)
